@@ -57,12 +57,10 @@ eq(Left, Right) ->
         case Acc of
             false ->
                 false;
-            true -> case orddict:find(Key, Right) of
-                        {ok, Value} -> true;
-                        _ -> false
-                    end
+            true ->
+                {ok, Value} =:= orddict:find(Key, Right)
         end
-                 end, true, Left).
+    end, true, Left).
 
 -spec max(vc(T), vc(T)) -> vc(T).
 max(Left, Right) ->

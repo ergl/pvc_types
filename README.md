@@ -1,7 +1,7 @@
-pvc_vlock
+pvc_types
 =====
 
-PVC vector clock implementation library
+PVC common types and data structures library
 
 Build
 -----

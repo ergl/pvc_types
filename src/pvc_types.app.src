@@ -1,5 +1,5 @@
-{application, pvc_vclock,
-    [{description, "PVC vector clock implementation library"},
+{application, pvc_types,
+    [{description, "PVC common types and data structures library"},
      {vsn, "0.1.0"},
      {registered, []},
      {applications, [kernel, stdlib]},
