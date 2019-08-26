@@ -31,40 +31,35 @@
 -export([from_list/1]).
 
 -type vc() :: vc(term()).
--opaque vc(T) :: orddict:orddict(T, non_neg_integer()).
+-opaque vc(T) :: #{T => non_neg_integer()}.
 
 -export_type([vc/1]).
 
 -spec new() -> vc().
-new() -> orddict:new().
+new() -> #{}.
 
 -spec get_time(T, vc(T)) -> non_neg_integer().
 get_time(Key, VectorClock) ->
-    case orddict:find(Key, VectorClock) of
-        {ok, Value} -> Value;
-        error -> 0
-    end.
+    maps:get(Key, VectorClock, 0).
 
 -spec set_time(T, non_neg_integer(), vc(T)) -> vc(T).
 set_time(Key, Value, VectorClock) ->
-    orddict:store(Key, Value, VectorClock).
+    maps:put(Key, Value, VectorClock).
 
 -spec eq(vc(T), vc(T)) -> boolean().
 eq(VC, VC) -> true;
-
-eq(Left, Right) ->
-    orddict:fold(fun(Key, Value, Acc) ->
-        case Acc of
-            false ->
-                false;
-            true ->
-                {ok, Value} =:= orddict:find(Key, Right)
-        end
-    end, true, Left).
+eq(Left, Right) -> Left =:= Right.
 
 -spec max(vc(T), vc(T)) -> vc(T).
+max(Left, Right) when map_size(Left) == 0 -> Right;
+max(Left, Right) when map_size(Right) == 0 -> Left;
 max(Left, Right) ->
-    orddict:merge(fun(_Key, V1, V2) -> erlang:max(V1, V2) end, Left, Right).
+    maps:merge(Left, maps:map(fun(Key, Value) ->
+        case maps:find(Key, Left) of
+            {ok, V} -> erlang:max(V, Value);
+            error -> Value
+        end
+    end, Right)).
 
 from_list(List) ->
-    orddict:from_list(List).
+    maps:from_list(List).
