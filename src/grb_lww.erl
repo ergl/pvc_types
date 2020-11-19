@@ -12,6 +12,7 @@
 -export([new/0,
          value/1,
          merge/2,
+         merge_ops/2,
          make_op/1,
          apply_op/3]).
 
@@ -26,6 +27,10 @@ value({_, Val}) ->
 -spec merge(t(), t()) -> t().
 merge(L, R) ->
     erlang:max(L, R).
+
+-spec merge_ops(op(), op()) -> op().
+merge_ops(_L, R) ->
+    R.
 
 -spec make_op(term()) -> op().
 make_op(X) ->
@@ -45,7 +50,11 @@ grb_lww_test() ->
     Final = lists:foldl(fun({Time, Op}, R) ->
         apply_op(Op, Time, R)
     end, new(), shuffle(OpList)),
-    ?assertEqual(Max, Final).
+    CompressedOpList = lists:foldl(fun({_, Op}, AccOp) ->
+        merge_ops(AccOp, Op)
+    end, element(2,hd(OpList)), tl(OpList)),
+    ?assertEqual(Max, Final),
+    ?assertEqual(Max, apply_op(CompressedOpList, 5, new())).
 
 shuffle([]) -> [];
 shuffle(List) ->
