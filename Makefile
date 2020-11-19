@@ -12,6 +12,9 @@ all: compile
 compile:
 	$(REBAR) compile
 
+test:
+	$(REBAR) eunit
+
 clean: packageclean
 	$(REBAR) clean
 
