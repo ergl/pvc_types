@@ -14,7 +14,8 @@
          value/1,
          make_op/2,
          merge_ops/2,
-         apply_op/4]).
+         apply_op/4,
+         apply_op_raw/2]).
 
 -spec new(crdt()) -> t().
 new(Mod) ->
@@ -35,6 +36,10 @@ merge_ops({Type, OpL}, {Type, OpR}) ->
 -spec apply_op(op(), [term()], grb_vclock:vc(), t()) -> t().
 apply_op({Type, Op}, Actors, CT, {Type, Base}) ->
     {Type, (module(Type)):apply_op(Op, Actors, CT, Base)}.
+
+-spec apply_op_raw(op(), t()) -> t().
+apply_op_raw({Type, Op}, {Type, Base}) ->
+    {Type, (module(Type)):apply_op_raw(Op, Base)}.
 
 -spec type(crdt()) -> non_neg_integer().
 type(grb_lww) -> 0;

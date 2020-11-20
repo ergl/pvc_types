@@ -13,6 +13,7 @@
          value/1,
          merge_ops/2,
          make_op/1,
+         apply_op_raw/2,
          apply_op/4]).
 
 -spec new() -> t().
@@ -30,6 +31,10 @@ merge_ops(_L, R) ->
 -spec make_op(term()) -> op().
 make_op(X) ->
     {assign, X}.
+
+-spec apply_op_raw(op(), t()) -> t().
+apply_op_raw({assign, X}, {Time, _}) ->
+    {Time, X}.
 
 -spec apply_op(op(), [term()], grb_vclock:vc(), t()) -> t().
 apply_op({assign, X}, Actors, CT, {OldCT, _}=R) ->

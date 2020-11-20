@@ -13,6 +13,7 @@
          value/1,
          merge_ops/2,
          make_op/1,
+         apply_op_raw/2,
          apply_op/4]).
 
 -spec new() -> t().
@@ -37,12 +38,17 @@ merge_ops({add_all, M}, R) ->
 make_op(X) ->
     {add, X}.
 
--spec apply_op(op(), _, _, t()) -> t().
-apply_op({add, X}, _, _, M) ->
+-spec apply_op_raw(op(), t()) -> t().
+apply_op_raw({add, X}, M) ->
     M#{X => nil};
 
-apply_op({add_all, M0}, _, _, M) ->
+apply_op_raw({add_all, M0}, M) ->
     maps:merge(M0, M).
+
+-spec apply_op(op(), _, _, t()) -> t().
+apply_op(Op, _, _, M) ->
+    %% we don't care about time for sets
+    apply_op_raw(Op, M).
 
 -ifdef(TEST).
 grb_gset_test() ->
