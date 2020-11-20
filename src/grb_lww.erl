@@ -4,29 +4,24 @@
 -include_lib("eunit/include/eunit.hrl").
 -endif.
 
--opaque t() :: {non_neg_integer(), term()}.
+-opaque t() :: {grb_vclock:vc(), term()}.
 -opaque op() :: {assign, term()}.
 -export_type([t/0, op/0]).
 
 %% API
 -export([new/0,
          value/1,
-         merge/2,
          merge_ops/2,
          make_op/1,
-         apply_op/3]).
+         apply_op/4]).
 
 -spec new() -> t().
 new() ->
-    {0, <<>>}.
+    {grb_vclock:new(), <<>>}.
 
 -spec value(t()) -> term().
 value({_, Val}) ->
     Val.
-
--spec merge(t(), t()) -> t().
-merge(L, R) ->
-    erlang:max(L, R).
 
 -spec merge_ops(op(), op()) -> op().
 merge_ops(_L, R) ->
@@ -36,25 +31,44 @@ merge_ops(_L, R) ->
 make_op(X) ->
     {assign, X}.
 
--spec apply_op(op(), non_neg_integer(), t()) -> t().
-apply_op(_, Time, {OldTime, _}=R)
-    when Time < OldTime ->
-        R;
-apply_op({assign, X}, Time, {OldTime, _}) ->
-    {erlang:max(Time, OldTime + 1), X}.
+-spec apply_op(op(), [term()], grb_vclock:vc(), t()) -> t().
+apply_op({assign, X}, Actors, CT, {OldCT, _}=R) ->
+    case grb_vclock:lt_at_keys(Actors, OldCT, CT) of
+        true ->
+            {grb_vclock:max_at_keys(Actors, CT, OldCT), X};
+        false ->
+            R
+    end.
 
 -ifdef(TEST).
 grb_lww_test() ->
-    Max = apply_op(make_op(0), 5, new()),
-    OpList = [{1, make_op(10)}, {2, make_op(30)}, {5, make_op(0)}],
-    Final = lists:foldl(fun({Time, Op}, R) ->
-        apply_op(Op, Time, R)
+    Actors = [a,b],
+    VC = fun(L) -> grb_vclock:from_list(L) end,
+
+    Max = apply_op(
+        make_op(0),
+        Actors,
+        VC([{a, 2}, {b, 3}]),
+        new()
+    ),
+    OpList = [
+        {make_op(10), VC([{a, 0}, {b, 1}])},
+        {make_op(30), VC([{a, 1}, {b, 1}])},
+        {make_op(0), VC([{a, 2}, {b, 3}])}
+    ],
+    Final = lists:foldl(fun({Op, CT}, R) ->
+        apply_op(Op, Actors, CT, R)
     end, new(), shuffle(OpList)),
-    CompressedOpList = lists:foldl(fun({_, Op}, AccOp) ->
+    CompressedOpList = lists:foldl(fun({Op, _}, AccOp) ->
         merge_ops(AccOp, Op)
     end, element(2,hd(OpList)), tl(OpList)),
     ?assertEqual(Max, Final),
-    ?assertEqual(Max, apply_op(CompressedOpList, 5, new())).
+    ?assertEqual(Max, apply_op(
+        CompressedOpList,
+        Actors,
+        VC([{a, 2}, {b, 3}]),
+        new())
+    ).
 
 shuffle([]) -> [];
 shuffle(List) ->
