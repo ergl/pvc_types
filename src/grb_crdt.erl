@@ -13,6 +13,7 @@
 -export([new/1,
          value/1,
          make_op/2,
+         op_type/1,
          merge_ops/2,
          apply_op/4,
          apply_op_raw/2]).
@@ -28,6 +29,10 @@ value({Type, Val}) ->
 -spec make_op(crdt(), term()) -> op().
 make_op(Mod, X) ->
     {type(Mod), Mod:make_op(X)}.
+
+-spec op_type(op()) -> crdt().
+op_type({Type, _}) ->
+    module(Type).
 
 -spec merge_ops(op(), op()) -> op().
 merge_ops({Type, OpL}, {Type, OpR}) ->
