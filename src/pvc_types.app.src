@@ -1,6 +1,6 @@
 {application, pvc_types,
     [{description, "PVC common types and data structures library"},
-     {vsn, "0.6.1"},
+     {vsn, "0.7.0"},
      {registered, []},
      {applications, [kernel, stdlib]},
      {env,[]},
