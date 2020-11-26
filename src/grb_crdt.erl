@@ -6,7 +6,7 @@
 
 -opaque t() :: {non_neg_integer(), grb_lww:t() | grb_gset:t()}.
 -opaque op() :: {non_neg_integer(), grb_lww:op() | grb_gset:op()}.
--type crdt() :: grb_lww | grb_gset.
+-type crdt() :: grb_lww | grb_gset | grb_gcounter | grb_maxtuple.
 
 -export_type([t/0, op/0, crdt/0]).
 
@@ -48,11 +48,15 @@ apply_op_raw({Type, Op}, {Type, Base}) ->
 
 -spec type(crdt()) -> non_neg_integer().
 type(grb_lww) -> 0;
-type(grb_gset) -> 1.
+type(grb_gset) -> 1;
+type(grb_gcounter) -> 2;
+type(grb_maxtuple) -> 3.
 
 -spec module(non_neg_integer()) -> crdt().
 module(0) -> grb_lww;
-module(1) -> grb_gset.
+module(1) -> grb_gset;
+module(2) -> grb_gcounter;
+module(3) -> grb_maxtuple.
 
 -ifdef(TEST).
 grb_crdt_lww_test() ->
@@ -95,6 +99,39 @@ grb_crdt_gset_test() ->
 
     ?assertMatch(#{10 := _, 30 := _, 0 := _},
                  grb_crdt:value(apply_op(CompressedOpList, ignore, ignore, Fresh))).
+
+grb_crdt_gcounter_test() ->
+    Fresh = grb_crdt:new(grb_gcounter),
+    OpList = [ grb_crdt:make_op(grb_gcounter, X) || X <- [10, 30, 0]],
+    Final = lists:foldl(fun(Op, R) ->
+        grb_crdt:apply_op(Op, ignore, ignore, R)
+    end, Fresh, shuffle(OpList)),
+    CompressedOpList = lists:foldl(fun(Op, AccOp) ->
+        grb_crdt:merge_ops(Op, AccOp)
+    end, hd(OpList), tl(OpList)),
+
+    ?assertMatch(40,
+                 grb_crdt:value(Final)),
+
+    ?assertMatch(40,
+                 grb_crdt:value(apply_op(CompressedOpList, ignore, ignore, Fresh))).
+
+grb_crdt_maxtuple_test() ->
+    Fresh = grb_crdt:new(grb_maxtuple),
+    OpList = [ grb_crdt:make_op(grb_maxtuple, X) || X <- [{10, a}, {30, b}, {0, c}]],
+    Final = lists:foldl(fun(Op, R) ->
+        grb_crdt:apply_op(Op, ignore, ignore, R)
+    end, Fresh, shuffle(OpList)),
+    CompressedOpList = lists:foldl(fun(Op, AccOp) ->
+        grb_crdt:merge_ops(Op, AccOp)
+    end, hd(OpList), tl(OpList)),
+
+    ?assertMatch({30, b},
+                 grb_crdt:value(Final)),
+
+    ?assertMatch({30, b},
+                 grb_crdt:value(apply_op(CompressedOpList, ignore, ignore, Fresh))).
+
 
 shuffle([]) -> [];
 shuffle(List) ->
