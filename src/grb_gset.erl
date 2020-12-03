@@ -5,7 +5,7 @@
 -endif.
 
 -opaque t() :: #{term() := nil}.
--opaque op() :: {add, term()} | {add_all, t()}.
+-opaque op() :: {add, term()} | {add_all, t()} | count_members | {limit, non_neg_integer()} | {member, term()}.
 -export_type([t/0, op/0]).
 
 %% API
@@ -14,7 +14,13 @@
          merge_ops/2,
          make_op/1,
          apply_op_raw/2,
-         apply_op/4]).
+         apply_op/4,
+         apply_read_op/2]).
+
+%% G-set specific API
+-export([count_op/0,
+         limit_op/1,
+         member_op/1]).
 
 -spec new() -> t().
 new() ->
@@ -38,6 +44,15 @@ merge_ops({add_all, M}, R) ->
 make_op(X) ->
     {add, X}.
 
+-spec count_op() -> op().
+count_op() -> count_members.
+
+-spec limit_op(non_neg_integer()) -> op().
+limit_op(X) when X >= 0 -> {limit, X}.
+
+-spec member_op(term()) -> op.
+member_op(X) -> {member, X}.
+
 -spec apply_op_raw(op(), t()) -> t().
 apply_op_raw({add, X}, M) ->
     M#{X => nil};
@@ -50,6 +65,20 @@ apply_op(Op, _, _, M) ->
     %% we don't care about time for sets
     apply_op_raw(Op, M).
 
+-spec apply_read_op(op(), t()) -> term().
+apply_read_op(count_members, M) ->
+    map_size(M);
+apply_read_op({member, X}, M) ->
+    maps:is_key(X, M);
+apply_read_op({limit, N}, M) when N >= 0 ->
+    limit_(N, maps:next(maps:iterator(M)), []).
+
+-spec limit_(non_neg_integer(), maps:iterator(), [term()]) -> [term()].
+limit_(_, none, Acc) -> Acc;
+limit_(0, _, Acc) -> Acc;
+limit_(N, {K, _, It}, Acc) ->
+    limit_(N - 1, maps:next(It), [K | Acc]).
+
 -ifdef(TEST).
 grb_gset_test() ->
     OpList = [make_op(10), make_op(30), make_op(0)],
@@ -60,7 +89,33 @@ grb_gset_test() ->
         merge_ops(Op, AccOp)
     end, hd(OpList), tl(OpList)),
     ?assertMatch(#{10 := _, 30 := _, 0 := _}, Final),
-    ?assertMatch(#{10 := _, 30 := _, 0 := _}, apply_op(CompressedOpList, ignore, ignore, new())).
+    ?assertMatch(#{10 := _, 30 := _, 0 := _}, apply_op(CompressedOpList, ignore, ignore, new())),
+
+    ?assertNot(apply_read_op(member_op(20), Final)),
+    ?assertEqual(3, apply_read_op(count_op(), Final)),
+
+    ?assertNot(apply_read_op(member_op(20), apply_op(CompressedOpList, ignore, ignore, new()))),
+    ?assertEqual(3, apply_read_op(count_op(), apply_op(CompressedOpList, ignore, ignore, new()))),
+
+    [
+        ?assert(apply_read_op(member_op(X), Final))
+        || X <- [10, 30, 0]
+    ],
+
+    [
+        ?assert(apply_read_op(member_op(X), apply_op(CompressedOpList, ignore, ignore, new())))
+        || X <- [10, 30, 0]
+    ],
+
+    [
+        ?assertEqual(X, length(apply_read_op(limit_op(X), Final)))
+        || X <- lists:seq(0, 3)
+    ],
+
+    [
+        ?assertEqual(X, length(apply_read_op(limit_op(X), apply_op(CompressedOpList, ignore, ignore, new()))))
+        || X <- lists:seq(0, 3)
+    ].
 
 shuffle([]) -> [];
 shuffle(List) ->

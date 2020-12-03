@@ -4,8 +4,9 @@
 -include_lib("eunit/include/eunit.hrl").
 -endif.
 
--opaque t() :: {non_neg_integer(), grb_lww:t() | grb_gset:t()}.
--opaque op() :: {non_neg_integer(), grb_lww:op() | grb_gset:op()}.
+-opaque t() :: {non_neg_integer(), grb_lww:t() | grb_gset:t() | grb_gcounter:t() | grb_maxtuple:t()}.
+-type raw_op() :: grb_lww:op() | grb_gset:op() | grb_gcounter:op() | grb_maxtuple:op().
+-opaque op() :: {non_neg_integer(), raw_op()}.
 -type crdt() :: grb_lww | grb_gset | grb_gcounter | grb_maxtuple.
 
 -export_type([t/0, op/0, crdt/0]).
@@ -14,9 +15,11 @@
          value/1,
          make_op/2,
          op_type/1,
+         wrap_op/2,
          merge_ops/2,
          apply_op/4,
-         apply_op_raw/2]).
+         apply_op_raw/2,
+         apply_read_op/2]).
 
 -spec new(crdt()) -> t().
 new(Mod) ->
@@ -29,6 +32,10 @@ value({Type, Val}) ->
 -spec make_op(crdt(), term()) -> op().
 make_op(Mod, X) ->
     {type(Mod), Mod:make_op(X)}.
+
+-spec wrap_op(crdt(), raw_op()) -> op().
+wrap_op(Mod, Op) ->
+    {type(Mod), Op}.
 
 -spec op_type(op()) -> crdt().
 op_type({Type, _}) ->
@@ -45,6 +52,13 @@ apply_op({Type, Op}, Actors, CT, {Type, Base}) ->
 -spec apply_op_raw(op(), t()) -> t().
 apply_op_raw({Type, Op}, {Type, Base}) ->
     {Type, (module(Type)):apply_op_raw(Op, Base)}.
+
+-spec apply_read_op(op(), t()) -> term().
+apply_read_op({Type, Op}, {Type, Base}) ->
+    case module(Type) of
+        grb_gset -> grb_gset:apply_read_op(Op, Base);
+        _ -> Base %% fast id bypass
+    end.
 
 -spec type(crdt()) -> non_neg_integer().
 type(grb_lww) -> 0;
