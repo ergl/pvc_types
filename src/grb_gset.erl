@@ -4,7 +4,7 @@
 -include_lib("eunit/include/eunit.hrl").
 -endif.
 
--opaque t() :: #{term() := nil}.
+-opaque t() :: #{term() := []}.
 -opaque op() :: {add, term()} | {add_all, t()} | count_members | {limit, non_neg_integer()} | {member, term()}.
 -export_type([t/0, op/0]).
 
@@ -26,13 +26,13 @@
 new() ->
     #{}.
 
--spec value(t()) -> #{term() := nil}.
+-spec value(t()) -> #{term() := []}.
 value(M) ->
     M.
 
 -spec merge_ops(op(), op()) -> op().
 merge_ops({add, X}, {add, Y}) ->
-    {add_all, #{X => nil, Y => nil}};
+    {add_all, #{X => [], Y => []}};
 
 merge_ops(L, {add_all, M}) ->
     {add_all, apply_op(L, ignore, ignore, M)};
@@ -55,7 +55,7 @@ member_op(X) -> {member, X}.
 
 -spec apply_op_raw(op(), t()) -> t().
 apply_op_raw({add, X}, M) ->
-    M#{X => nil};
+    M#{X => []};
 
 apply_op_raw({add_all, M0}, M) ->
     maps:merge(M0, M).
