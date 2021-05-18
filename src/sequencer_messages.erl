@@ -6,13 +6,15 @@
 -define(pepare_request, 1).
 -define(prepare_response, 2).
 -define(deliver, 3).
+-define(conflicts, 4).
 
 -export([frame/2]).
 
 -export([ping/1,
          prepare_request/5,
          prepare_response/2,
-         deliver/2]).
+         deliver/2,
+         put_conflicts/1]).
 
 -export([decode/1]).
 
@@ -40,6 +42,10 @@ deliver(Ts, Transactions) ->
     Payload = <<Ts:8/unit:8-integer-big-unsigned, (term_to_binary(Transactions))/binary>>,
     <<?SEQUENCER_VERSION:?SEQUENCER_VERSION_BITS, ?deliver:8, Payload/binary>>.
 
+-spec put_conflicts(term()) -> binary().
+put_conflicts(Conflicts) ->
+    <<?SEQUENCER_VERSION:?SEQUENCER_VERSION_BITS, ?conflicts:8, (term_to_binary(Conflicts))/binary>>.
+
 decode(<<?ping:8, Payload/binary>>) ->
     #ping{partitions=binary_to_term(Payload)};
 
@@ -64,4 +70,9 @@ decode(<<?deliver:8, Ts:8/unit:8-integer-big-unsigned, Payload/binary>>) ->
     #redblue_deliver{
         timestamp=Ts,
         transactions=binary_to_term(Payload)
+    };
+
+decode(<<?conflicts:8, Payload/binary>>) ->
+    #reblue_put_conflicts{
+        conflicts=binary_to_term(Payload)
     }.

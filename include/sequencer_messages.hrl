@@ -29,10 +29,15 @@
     transactions :: [{#{non_neg_integer() := #{}}, #{}}]
 }).
 
+-record(reblue_put_conflicts, {
+    conflicts :: term()
+}).
+
 -type sequencer_message() :: #ping{}
                            | #redblue_prepare_request{}
                            | #redblue_prepare_response{}
-                           | #redblue_deliver{}.
+                           | #redblue_deliver{}
+                           | #reblue_put_conflicts{}.
 
 -export_type([
     sequencer_message/0
