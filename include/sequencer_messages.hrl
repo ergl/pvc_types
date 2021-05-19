@@ -19,7 +19,7 @@
 -record(redblue_prepare_response, {
     tx_id :: term(),
     %% abort reason, or commit vector
-    outcome :: atom() | #{}
+    outcome :: atom() | {ok, #{}}
 }).
 
 -record(redblue_deliver, {
