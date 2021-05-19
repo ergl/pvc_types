@@ -5,7 +5,7 @@
 ).
 
 -record(ping, {
-   partitions :: [non_neg_integer()]
+    partitions :: [non_neg_integer()]
 }).
 
 -record(redblue_prepare_request, {
@@ -26,7 +26,7 @@
     timestamp :: non_neg_integer(),
     %% writeset and commit vector
     %% the writeset contains the partitions where this should be routed
-    transactions :: [{#{non_neg_integer() := #{}}, #{}}]
+    transactions :: [{term(), #{non_neg_integer() := #{}}, #{}}]
 }).
 
 -record(reblue_put_conflicts, {

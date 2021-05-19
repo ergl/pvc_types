@@ -37,7 +37,7 @@ prepare_response(TxId, Outcome) ->
     Payload = term_to_binary({TxId, Outcome}),
     <<?SEQUENCER_VERSION:?SEQUENCER_VERSION_BITS, ?prepare_response:8, Payload/binary>>.
 
--spec deliver(non_neg_integer(), [{#{non_neg_integer() := #{}}, #{}}]) -> binary().
+-spec deliver(non_neg_integer(), [{term(), #{non_neg_integer() := #{}}, #{}}]) -> binary().
 deliver(Ts, Transactions) ->
     Payload = <<Ts:8/unit:8-integer-big-unsigned, (term_to_binary(Transactions))/binary>>,
     <<?SEQUENCER_VERSION:?SEQUENCER_VERSION_BITS, ?deliver:8, Payload/binary>>.
