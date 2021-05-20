@@ -32,7 +32,7 @@ prepare_request(TxId, Label, RS, WS, VC) ->
     Payload = term_to_binary({TxId, Label, RS, WS, VC}),
     <<?SEQUENCER_VERSION:?SEQUENCER_VERSION_BITS, ?pepare_request:8, Payload/binary>>.
 
--spec prepare_response(term(), atom() | {ok, #{}}) -> binary().
+-spec prepare_response(term(), {abort, atom()} | {ok, #{}}) -> binary().
 prepare_response(TxId, Outcome) ->
     Payload = term_to_binary({TxId, Outcome}),
     <<?SEQUENCER_VERSION:?SEQUENCER_VERSION_BITS, ?prepare_response:8, Payload/binary>>.
